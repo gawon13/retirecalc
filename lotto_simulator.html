@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 당첨 확률 계산기 | 통계로 확인하는 당첨의 현실</title>
+    <meta name="description" content="로또 1등 당첨 확률을 반복 계산을 통해 실시간으로 확인합니다. 수만 번의 시행 결과로 로또 당첨의 통계적 기대치를 보여드립니다.">
+    <meta name="author" content="자산 관리 및 은퇴 계산기">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="layout.js" defer></script>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .lotto-ball {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            margin: 0 1px;
+            box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.1);
+            font-size: 0.7rem;
+        }
+
+        .ball-1 {
+            background: #facc15;
+        }
+
+        .ball-11 {
+            background: #60a5fa;
+        }
+
+        .ball-21 {
+            background: #f87171;
+        }
+
+        .ball-31 {
+            background: #94a3b8;
+        }
+
+        .ball-41 {
+            background: #4ade80;
+        }
+
+        .number-grid-btn {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.1s ease;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            background-color: white;
+            padding: 0;
+        }
+
+        .number-grid-btn:hover:not(.selected) {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .number-grid-btn.selected {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+            transform: scale(1.05);
+            z-index: 5;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* 로딩 애니메이션 전용 */
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .loading-ball {
+            animation: bounce 0.6s infinite ease-in-out;
+        }
+
+        .ad-optimized-container {
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        @media (min-width: 1280px) {
+            .ad-optimized-container {
+                max-width: 960px;
+            }
+        }
+
+        @media (min-width: 1440px) {
+            .ad-optimized-container {
+                max-width: 1080px;
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .ad-optimized-container {
+                max-width: 1280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 80px;
+            }
+        }
+
+        .bg-dashboard {
+            background-color: #0f172a;
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+        }
+
+        .rotate-icon {
+            animation: spin-slow 10s linear infinite;
+        }
+
+        @keyframes spin-slow {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
+    <!-- SEO: Main Heading -->
+    <h1 class="sr-only">로또 당첨 확률 계산기</h1>
+
+    <main class="ad-optimized-container flex-grow py-6">
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+            <!-- ========== INPUT PANEL ========== -->
+            <section class="input-panel lg:col-span-5 flex flex-col gap-4">
+                <div class="input-group bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col h-full">
+                    <h2 class="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9">
+                            </path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        번호 선택
+                    </h2>
+
+                    <div id="numberDisplay"
+                        class="flex justify-center items-center gap-1 min-h-[56px] mb-5 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <span class="text-slate-400 text-xs">번호 6개를 클릭하여 고르세요</span>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1 mb-5" id="numberGrid"></div>
+
+                    <div class="flex gap-2 mb-6">
+                        <button onclick="generateRandomNumbers()"
+                            class="flex-grow bg-slate-100 text-slate-700 py-3 rounded-lg font-semibold text-xs hover:bg-slate-200 transition-all active:scale-95 border border-slate-200">
+                            자동 생성
+                        </button>
+                        <button id="startSimBtn" disabled onclick="startSimulation()"
+                            class="flex-[2] bg-blue-600 text-white py-3 rounded-lg font-bold text-xs hover:bg-blue-700 transition-all active:scale-95 disabled:bg-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed shadow-md">
+                            시뮬레이션 시작
+                        </button>
+                    </div>
+
+                    <div
+                        class="bg-blue-50/50 rounded-lg p-4 border border-blue-100 text-[11px] leading-relaxed text-slate-600">
+                        <strong class="text-blue-700 block mb-1 font-bold">시뮬레이션 규칙</strong>
+                        <ul class="space-y-1">
+                            <li>• 매주 5,000원(5게임)씩 평생 구매 가정</li>
+                            <li>• 1등 당첨 확률: 1/8,145,060 적용</li>
+                            <li>• 투자 기회비용: 연 5.0% 복리 수익률 기준</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== OUTPUT PANEL ========== -->
+            <section class="output-panel lg:col-span-7 flex flex-col gap-4">
+
+                <!-- ========== RESULT DASHBOARD ========== -->
+                <section
+                    class="result-dashboard bg-dashboard rounded-2xl p-6 text-white shadow-xl overflow-hidden min-h-[220px] flex flex-col justify-between border border-white/5">
+                    <div class="relative z-10">
+                        <div class="flex items-start justify-between mb-8">
+                            <div class="space-y-2">
+                                <div
+                                    class="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 w-fit">
+                                    <div id="statusDot" class="w-2 h-2 bg-slate-500 rounded-full"></div>
+                                    <span id="statusText"
+                                        class="text-[10px] font-bold uppercase tracking-widest text-slate-400">시스템 대기
+                                        중</span>
+                                </div>
+                                <p id="liveMessage" class="text-sm font-medium text-blue-200/80 italic">시뮬레이션을 준비
+                                    중입니다...</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                <div id="progressPercent" class="text-2xl font-black text-blue-400 hidden neon-text">0%
+                                </div>
+                                <div id="waitIcon" class="p-2 bg-white/5 rounded-lg rotate-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path
+                                            d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-6">
+                            <div class="space-y-1">
+                                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">누적 구매</p>
+                                <div id="counterText" class="text-2xl font-mono font-bold italic truncate">0<span
+                                        class="text-[10px] font-sans text-slate-600 ml-1 not-italic font-normal">회</span>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">소요 세월</p>
+                                <div id="yearText"
+                                    class="text-2xl font-mono font-bold italic text-amber-400/40 truncate">0<span
+                                        class="text-[10px] font-sans text-amber-600/20 ml-1 not-italic font-normal">년</span>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">투입 금액</p>
+                                <div id="moneyText"
+                                    class="text-2xl font-mono font-bold italic text-emerald-400/40 truncate">0<span
+                                        class="text-[10px] font-sans text-emerald-600/20 ml-1 not-italic font-normal">원</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- AD: Content Body (Fixed Position - Below Dashboard) -->
+                <div class="flex justify-center my-0" style="height:50px; overflow:hidden;">
+                    <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-w2OqK8PQgbYOk5CA"
+                        data-ad-width="320" data-ad-height="50"></ins>
+                    <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+                </div>
+                <!-- 중앙 컨텐츠 (상태에 따라 전환) -->
+                <div class="flex-grow flex flex-col min-h-[300px]">
+                    <!-- 초기 화면 -->
+                    <div id="resultPlaceholder"
+                        class="bg-white rounded-xl p-8 border border-slate-200 flex-grow flex flex-col items-center justify-center text-center">
+                        <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 rotate-12">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v20M17 5H9.5a4.5 4.5 0 0 0 0 9h5a4.5 4.5 0 0 1 0 9H7" />
+                            </svg>
+                        </div>
+                        <h3 class="text-slate-800 font-bold text-base mb-2">언제쯤 1등이 될까요?</h3>
+                        <p class="text-slate-400 text-xs leading-relaxed max-w-[240px]">
+                            좌측에서 번호를 고르고 시작해보세요.<br />
+                            은퇴 시점까지의 모든 비용을 계산합니다.
+                        </p>
+                    </div>
+
+                    <!-- 로딩 애니메이션 -->
+                    <div id="loadingArea"
+                        class="hidden bg-white rounded-xl p-10 border border-slate-200 flex-grow flex flex-col items-center justify-center text-center animate-fade">
+                        <div class="relative mb-10">
+                            <div class="absolute -inset-4 bg-blue-100 rounded-full blur-xl opacity-30 animate-pulse">
+                            </div>
+                            <div class="flex gap-2 relative z-10">
+                                <div class="lotto-ball ball-1 loading-ball" style="animation-delay: 0s">?</div>
+                                <div class="lotto-ball ball-11 loading-ball" style="animation-delay: 0.1s">?</div>
+                                <div class="lotto-ball ball-21 loading-ball" style="animation-delay: 0.2s">?</div>
+                                <div class="lotto-ball ball-31 loading-ball" style="animation-delay: 0.3s">?</div>
+                                <div class="lotto-ball ball-41 loading-ball" style="animation-delay: 0.4s">?</div>
+                            </div>
+                        </div>
+                        <p id="loadingMsg" class="text-slate-600 text-sm font-semibold italic">로또 판매점에서 줄 서는 중...</p>
+                        <p class="text-slate-400 text-[10px] mt-2 tracking-tighter uppercase">Simulation is currently
+                            processing...</p>
+                    </div>
+
+                    <!-- 결과 리포트 -->
+                    <section id="simResult"
+                        class="hidden bg-white rounded-xl p-6 shadow-sm border border-slate-200 animate-fade flex-grow">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div id="resultIcon" class="text-3xl p-3 bg-slate-50 rounded-xl">🏆</div>
+                            <div>
+                                <h3 id="resultTitle" class="text-base font-bold text-slate-800 leading-tight">분석 결과</h3>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">통계 분석
+                                    보고서</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mb-6">
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase mb-1">총 로또 구매액수</p>
+                                <p id="resSpent" class="text-lg font-bold text-slate-800">0.00 억원</p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase mb-1">기회비용 (복리)</p>
+                                <p id="resInvest" class="text-lg font-bold text-blue-600">0.00 억원</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-600 p-5 rounded-xl text-white relative">
+                            <h4
+                                class="font-bold text-[11px] mb-2 flex items-center gap-1.5 text-blue-100 uppercase tracking-wider">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                은퇴 처방전
+                            </h4>
+                            <p id="adviceText" class="text-[11px] leading-relaxed font-medium">
+                                -
+                            </p>
+                        </div>
+                    </section>
+                </div>
+
+                <div
+                    class="bg-slate-100/50 rounded-xl p-4 border border-slate-200 text-[10px] leading-relaxed text-slate-500">
+                    <strong class="text-slate-700 block mb-1 font-bold">참고사항</strong>
+                    미당첨 구매액을 소비하지 않고 연 수익률 5%의 지수 추종 ETF에 꾸준히 투자했을 때의 복리 가치를 은퇴 자금의 기준으로 삼습니다.
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        let myNumbers = new Set();
+        const LOTTO_PROB = 8145060;
+
+        const waitMessages = [
+            "번호 꼬라지가 당첨될 상은 아니네요 (농담)",
+            "이 번호로 은퇴가 가능할까요? 도전해보세요",
+            "조상님이 번호를 점지해주길 기다리고 있습니다",
+            "당첨되면 제 지분도 조금 주시는 건가요?",
+            "번호 조합이 꽤나 창의적이시군요",
+            "은퇴 자금 마련을 위한 위대한 여정의 시작",
+            "복권 한 장의 희망이 절망으로 바뀌기까지 3초 전",
+            "인생 역전을 꿈꾸는 당신, 준비되셨나요?",
+            "수학적으로는 안 사는 게 이득이지만 일단 눌러보시죠",
+            "당첨 확률 814만 분의 1, 과연 오늘?"
+        ];
+
+        const loadingMessages = [
+            "로또 판매점에서 줄 서는 중...",
+            "조상님 꿈 꾸는 중...",
+            "자동 기계 돌리는 중...",
+            "당첨 번호 분석 중 (의미 없지만)...",
+            "낙첨 용지 분리수거 중...",
+            "희망 고문 회로 돌리는 중...",
+            "은행 예치금 확인 중...",
+            "로또 명당으로 이동 중..."
+        ];
+
+        const failMessages = [
+            "다음 생애에는 꼭 성공하시길 빕니다. 이번 생은 틀린 것 같네요.",
+            "이 정도 세월이면 인류가 화성에 정착했을 시간입니다. 로또는 여전히 꽝이네요.",
+            "로또 용지를 쌓았으면 에베레스트보다 높았을 텐데, 결과는 여전히 0원입니다.",
+            "지구 한 바퀴를 돌 만큼 로또를 샀지만, 당신의 지갑은 한 걸음도 못 나갔습니다.",
+            "당첨되기 전에 태양이 수명을 다할 수도 있다는 사실, 알고 계셨나요?",
+            "이 정도면 로또 기계가 당신만 피해서 번호를 뽑는 게 학계의 정설입니다.",
+            "확률적으로 당신이 벼락에 10번 맞는 게 더 빠를지도 모릅니다.",
+            "단군 할아버지가 로또를 사기 시작했어도 아직 당첨 안 됐을 기간입니다.",
+            "은퇴는커녕 손자들의 용돈까지 다 날리고 계시는군요.",
+            "꿈속에서 본 조상님 번호가 4차 산업혁명 시대에는 안 통하나 봅니다."
+        ];
+
+        const successMessages = [
+            "운이 정말 좋으시네요! 하지만 이 운을 위해 소비한 세월이 조금 아깝지는 않나요?",
+            "당첨입니다! 이제 이 돈으로 그동안 로또 사느라 못 산 주식을 사러 갈까요?",
+            "세상에, 당첨이라니! 하지만 기회비용을 보면 마냥 웃음이 나오진 않을 걸요?",
+            "축하합니다! 인류 역사상 보기 드문 행운아 반열에 오르셨습니다.",
+            "드디어 1등! 이제 로또 판매점 사장님 대신 당신이 부자가 될 차례입니다."
+        ];
+
+        function initGrid() {
+            const grid = document.getElementById('numberGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 45; i++) {
+                const btn = document.createElement('button');
+                btn.innerText = i;
+                btn.id = `btn-${i}`;
+                btn.className = 'number-grid-btn';
+                btn.onclick = () => toggleNumber(i);
+                grid.appendChild(btn);
+            }
+            updateStatusMsg();
+        }
+
+        function updateStatusMsg() {
+            const statusText = document.getElementById('statusText');
+            const liveMessage = document.getElementById('liveMessage');
+            const statusDot = document.getElementById('statusDot');
+
+            if (myNumbers.size < 6) {
+                statusText.innerText = "번호 선택 중";
+                liveMessage.innerText = `남은 번호: ${6 - myNumbers.size}개... 신중하게 골라보세요.`;
+                statusDot.className = "w-2 h-2 bg-slate-500 rounded-full";
+            } else {
+                statusText.innerText = "준비 완료";
+                const randomMsg = waitMessages[Math.floor(Math.random() * waitMessages.length)];
+                liveMessage.innerText = randomMsg;
+                statusDot.className = "w-2 h-2 bg-blue-500 rounded-full animate-pulse";
+            }
+        }
+
+        function toggleNumber(n) {
+            if (myNumbers.has(n)) {
+                myNumbers.delete(n);
+                document.getElementById(`btn-${n}`).classList.remove('selected');
+            } else {
+                if (myNumbers.size >= 6) return;
+                myNumbers.add(n);
+                document.getElementById(`btn-${n}`).classList.add('selected');
+            }
+            updateDisplay();
+            updateStatusMsg();
+        }
+
+        function getBallColor(n) {
+            if (n <= 10) return 'ball-1';
+            if (n <= 20) return 'ball-11';
+            if (n <= 30) return 'ball-21';
+            if (n <= 40) return 'ball-31';
+            return 'ball-41';
+        }
+
+        function updateDisplay() {
+            const sorted = Array.from(myNumbers).sort((a, b) => a - b);
+            const display = document.getElementById('numberDisplay');
+            const startBtn = document.getElementById('startSimBtn');
+
+            if (sorted.length === 0) {
+                display.innerHTML = '<span class="text-slate-400 text-xs">번호 6개를 클릭하여 고르세요</span>';
+                startBtn.disabled = true;
+            } else {
+                display.innerHTML = sorted.map(n => `<div class="lotto-ball ${getBallColor(n)}">${n}</div>`).join('');
+                startBtn.disabled = sorted.length !== 6;
+            }
+        }
+
+        function generateRandomNumbers() {
+            resetSelection();
+            while (myNumbers.size < 6) myNumbers.add(Math.floor(Math.random() * 45) + 1);
+            myNumbers.forEach(n => document.getElementById(`btn-${n}`).classList.add('selected'));
+            updateDisplay();
+            updateStatusMsg();
+        }
+
+        function resetSelection() {
+            myNumbers.clear();
+            const btns = document.querySelectorAll('.number-grid-btn');
+            btns.forEach(btn => btn.classList.remove('selected'));
+            updateDisplay();
+            updateStatusMsg();
+        }
+
+        function startSimulation() {
+            const resultSection = document.getElementById('simResult');
+            const placeholder = document.getElementById('resultPlaceholder');
+            const loadingArea = document.getElementById('loadingArea');
+            const loadingMsg = document.getElementById('loadingMsg');
+            const startBtn = document.getElementById('startSimBtn');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const liveMessage = document.getElementById('liveMessage');
+
+            const counterText = document.getElementById('counterText');
+            const yearText = document.getElementById('yearText');
+            const moneyText = document.getElementById('moneyText');
+            const progressPercent = document.getElementById('progressPercent');
+            const waitIcon = document.getElementById('waitIcon');
+
+            placeholder.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            loadingArea.classList.remove('hidden');
+            startBtn.disabled = true;
+
+            progressPercent.classList.remove('hidden');
+            waitIcon.classList.add('hidden');
+            statusDot.className = "w-2 h-2 bg-red-500 rounded-full animate-ping";
+            statusText.innerText = "시뮬레이션 가동 중";
+            liveMessage.innerText = "당첨될 때까지 시간을 가속하고 있습니다...";
+
+            const targetCount = Math.floor((-Math.log(1 - Math.random()) * LOTTO_PROB));
+
+            let msgIdx = 0;
+            const msgInterval = setInterval(() => {
+                loadingMsg.innerText = loadingMessages[msgIdx % loadingMessages.length];
+                msgIdx++;
+            }, 500);
+
+            const startTime = Date.now();
+            const duration = 2800;
+
+            function update() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+
+                const currentCount = Math.floor(targetCount * easeOut);
+                const currentYears = Math.floor(currentCount / (52 * 5));
+                const currentMoney = currentCount * 1000;
+                const currentPercent = Math.floor(progress * 100);
+
+                counterText.innerHTML = `${currentCount.toLocaleString()}<span class="text-[10px] font-sans text-slate-600 ml-1 not-italic font-normal">회</span>`;
+                yearText.innerHTML = `${currentYears.toLocaleString()}<span class="text-[10px] font-sans text-amber-600 ml-1 not-italic font-normal">년</span>`;
+                moneyText.innerHTML = `${(currentMoney / 100000000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span class="text-[10px] font-sans text-emerald-600 ml-1 not-italic font-normal">억원</span>`;
+
+                yearText.style.opacity = Math.max(0.4, progress);
+                moneyText.style.opacity = Math.max(0.4, progress);
+                progressPercent.innerText = `${currentPercent}%`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    clearInterval(msgInterval);
+                    loadingArea.classList.add('hidden');
+                    progressPercent.classList.add('hidden');
+                    waitIcon.classList.remove('hidden');
+                    statusDot.className = "w-2 h-2 bg-emerald-500 rounded-full";
+                    statusText.innerText = "분석 완료";
+                    liveMessage.innerText = "당첨 결과를 확인하십시오.";
+                    showResult(targetCount);
+                    resetSelection();
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        function showResult(count) {
+            const resultSection = document.getElementById('simResult');
+            const years = Math.floor(count / (52 * 5));
+            const spent = count * 1000;
+
+            let invested = 0;
+            const annualSavings = 52 * 5000;
+            for (let i = 0; i < Math.min(years, 500); i++) {
+                invested = (invested + annualSavings) * 1.05;
+            }
+
+            resultSection.classList.remove('hidden');
+
+            const spentFormatted = (spent / 100000000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' 억원';
+            const investedFormatted = (invested / 100000000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' 억원';
+
+            document.getElementById('resSpent').innerText = spentFormatted;
+            document.getElementById('resInvest').innerText = investedFormatted;
+
+            const isAlive = years < 60;
+            const randomFailMsg = failMessages[Math.floor(Math.random() * failMessages.length)];
+            const randomSuccessMsg = successMessages[Math.floor(Math.random() * successMessages.length)];
+
+            document.getElementById('resultIcon').innerText = isAlive ? '🎉' : '💀';
+            document.getElementById('resultTitle').innerText = isAlive
+                ? `${years.toLocaleString()}년 만에 1등 당첨!`
+                : `은퇴 실패 (${years.toLocaleString()}년 소요)`;
+
+            if (isAlive) {
+                document.getElementById('adviceText').innerHTML = `
+                    <strong>${randomSuccessMsg}</strong><br/><br/>
+                    행운의 여신이 당신을 도왔습니다! 하지만 당첨되기까지 쏟아부은 <strong>${spentFormatted}</strong>은 결코 적은 돈이 아닙니다. 
+                    투자 수익 <strong>${investedFormatted}</strong>보다 로또 당첨금이 더 큰지 계산기를 두드려볼 시간입니다.
+                `;
+            } else {
+                document.getElementById('adviceText').innerHTML = `
+                    <strong>${randomFailMsg}</strong><br/><br/>
+                    당첨될 때까지 로또에 쓴 돈은 <strong>${spentFormatted}</strong>입니다. 
+                    이 돈을 그냥 지수 추종 ETF에 묻어뒀다면 <strong>${investedFormatted}</strong>이 되어 있었을 겁니다.
+                `;
+            }
+        }
+
+        initGrid();
+    </script>
+    </script>
+</body>
+
+</html>
